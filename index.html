@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="manifest" href="manifest.json">
+
+<title>Student Budget Tracker</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    background: linear-gradient(135deg,#0f172a,#1e3a8a);
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+h2{
+    margin-bottom: 10px;
+}
+
+#warn{
+    display: none;
+    background: #ef4444;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.wrap{
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.box{
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 10px;
+    width: 320px;
+}
+
+input{
+    width: 90%;
+    padding: 8px;
+    margin: 6px 0;
+    border: none;
+    border-radius: 6px;
+}
+
+table{
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td{
+    padding: 6px;
+    border-bottom: 1px solid #334155;
+}
+
+.btn{
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #3b82f6;
+    color: white;
+    margin: 2px;
+}
+
+.b-add{
+    background: #22c55e;
+}
+
+.b-exp{
+    background: #f97316;
+}
+
+.b-clr{
+    background: #ef4444;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<h2>STUDENT BUDGET TRACKER</h2>
+
+<div id="warn">ALLOWANCE EXCEEDED!</div>
+
+<div class="wrap">
+
+    <div class="box">
+
+        <h3>Allowance</h3>
+
+        <input id="allow" type="number" placeholder="Enter Allowance">
+
+        <button class="btn b-add" onclick="setAllow()">Set Allowance</button>
+
+        <p>Balance: ₱<span id="bal">0</span></p>
+
+        <hr>
+
+        <h3>Add Expense</h3>
+
+        <input id="desc" placeholder="Expense Note">
+        <input id="amt" type="number" placeholder="Amount">
+
+        <button class="btn b-exp" onclick="add()">Add Expense</button>
+
+    </div>
+
+
+    <div class="box">
+
+        <h3>History</h3>
+
+        <div style="overflow-x:auto;">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Note</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tb"></tbody>
+
+            </table>
+
+        </div>
+
+        <button class="btn b-clr" style="margin-top:10px;" onclick="clr()">Clear All</button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let bal = 0
+
+window.onload = () => {
+    show()
+}
+
+
+function setAllow(){
+
+    let a = document.getElementById("allow").value
+
+    if(!a) return
+
+    bal = parseFloat(a)
+
+    localStorage.setItem("bal", bal)
+
+    document.getElementById("bal").innerText = bal
+}
+
+
+function add(){
+
+    let d = document.getElementById("desc").value
+    let a = document.getElementById("amt").value
+
+    if(!d || !a) return
+
+    bal = parseFloat(localStorage.getItem("bal")) || 0
+
+    bal -= parseFloat(a)
+
+    localStorage.setItem("bal", bal)
+
+    let x = JSON.parse(localStorage.getItem("b_logs")) || []
+
+    x.push({
+        id: Date.now(),
+        t: new Date().toLocaleTimeString(),
+        n: d,
+        a: a
+    })
+
+    localStorage.setItem("b_logs", JSON.stringify(x))
+
+    show()
+}
+
+
+function show(){
+
+    let x = JSON.parse(localStorage.getItem("b_logs")) || []
+    let b = document.getElementById("tb")
+
+    b.innerHTML = ""
+
+    bal = parseFloat(localStorage.getItem("bal")) || 0
+
+    x.forEach(i => {
+
+        b.innerHTML += `
+        <tr>
+            <td>${i.t}</td>
+            <td>${i.n}</td>
+            <td>₱${i.a}</td>
+            <td>
+                <button class="btn" onclick="del(${i.id})">X</button>
+            </td>
+        </tr>
+        `
+    })
+
+    document.getElementById("bal").innerText = bal
+
+    if(bal < 0){
+        document.getElementById("warn").style.display = "block"
+    }else{
+        document.getElementById("warn").style.display = "none"
+    }
+
+}
+
+
+function del(id){
+
+    let x = JSON.parse(localStorage.getItem("b_logs"))
+
+    let item = x.find(i => i.id === id)
+
+    bal += parseFloat(item.a)
+
+    localStorage.setItem("bal", bal)
+
+    localStorage.setItem(
+        "b_logs",
+        JSON.stringify(x.filter(l => l.id !== id))
+    )
+
+    show()
+}
+
+
+function clr(){
+
+    if(confirm("Clear?")){
+
+        localStorage.removeItem("b_logs")
+        localStorage.removeItem("bal")
+
+        show()
+    }
+}
+
+
+if ("serviceWorker" in navigator) {
+
+    navigator.serviceWorker
+        .register("/service-worker.js")
+
+        .then(() => {
+            console.log("ayos! rehistro as service worker");
+        })
+
+        .catch((error) => {
+            console.log("Registration failed: ", error);
+        });
+
+}
+
+</script>
+
+</body>
+  </html>
